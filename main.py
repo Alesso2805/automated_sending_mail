@@ -36,9 +36,10 @@ def extraer_seccion_pdf(pdf_path, inicio, fin, password=None):
         else:
             relevant_part = filename.split('Cuenta')[-1].strip().replace('.pdf', '')
 
-        # Añadir la parte relevante al título
-        seccion = seccion.replace(inicio, f"{inicio} ({relevant_part})", 1)
-
+        if relevant_part:
+            seccion = seccion.replace(inicio, f"{inicio} - {relevant_part}", 1)
+        else:
+            seccion = seccion.replace(inicio, f"{inicio}", 1)
         return seccion
 
 def poner_en_negrita_despues_de_es(texto, palabra_negrita):
@@ -117,6 +118,7 @@ for codigo, datos in clientes.items():
     for pdf_file in pdf_files:
         pdf_path = os.path.join(pdf_dir, pdf_file)
         seccion_extraida = extraer_seccion_pdf(pdf_path, "Rentabilidad del Portafolio", "Comentario de Mercado", password)
+        seccion_extraida = seccion_extraida.replace("Portafolio", "Mes")
         seccion_extraida_modificada = poner_en_negrita_despues_de_es(seccion_extraida, "Rentabilidad del Portafolio")
         seccion_extraida_html = formatear_a_html(seccion_extraida_modificada, font_family="Calibri", line_height="1")
         secciones_extraidas.append(seccion_extraida_html)
