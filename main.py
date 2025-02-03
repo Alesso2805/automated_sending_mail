@@ -14,14 +14,32 @@ def extraer_seccion_pdf(pdf_path, inicio, fin, password=None):
         for page in pdf.pages:
             texto_completo += page.extract_text() + "\n"
 
-        # Buscar inicio y fin de la sección
+        # Buscar inicio de la sección
         inicio_idx = texto_completo.find(inicio)
-        fin_idx = texto_completo.find(fin, inicio_idx)
-
-        if inicio_idx != -1 and fin_idx != -1:
-            return texto_completo[inicio_idx:fin_idx + len(fin)]
-        else:
+        if inicio_idx == -1:
             return "⚠ Sección no encontrada en el PDF."
+
+        # Buscar el final de la sección
+        fin_idx = texto_completo.find(fin, inicio_idx)
+        if fin_idx == -1:
+            # Si no se encuentra el final, extraer hasta el final del texto
+            fin_idx = len(texto_completo)
+
+        # Extraer la sección
+        seccion = texto_completo[inicio_idx:fin_idx]
+
+        # Obtener la parte relevante del nombre del archivo
+        filename = os.path.basename(pdf_path)
+        relevant_part = re.search(r'\((.*?)\)', filename)
+        if relevant_part:
+            relevant_part = relevant_part.group(1)
+        else:
+            relevant_part = filename.split('Cuenta')[-1].strip().replace('.pdf', '')
+
+        # Añadir la parte relevante al título
+        seccion = seccion.replace(inicio, f"{inicio} ({relevant_part})", 1)
+
+        return seccion
 
 def poner_en_negrita_despues_de_es(texto, palabra_negrita):
     lineas = texto.split('\n')
@@ -76,7 +94,8 @@ def enviar_correo(destinatario, nombre, asunto, cuerpo, adjunto=None, imagen_pat
         attachment.PropertyAccessor.SetProperty("http://schemas.microsoft.com/mapi/proptag/0x3712001F", "gamnic_image")
 
     if adjunto:
-        mail.Attachments.Add(adjunto)
+        for file in adjunto:
+            mail.Attachments.Add(file)
 
     mail.Send()
     print(f"📧 Correo enviado a {nombre} ({destinatario}).")
@@ -90,19 +109,26 @@ last_month_str = last_month.strftime('%B').capitalize()
 
 # Enviar los correos
 for codigo, datos in clientes.items():
-    pdf_path = f"C:/Users/Alessandro/Desktop/portfolios/{codigo.zfill(3)} - 2024 12 - Estado de Cuenta.pdf"
-    password = f"gamnic{codigo.zfill(3)}"  # Replace with the actual logic to get the password
-    seccion_extraida = extraer_seccion_pdf(pdf_path, "Rentabilidad del Portafolio", "anual)", password)
+    pdf_dir = "C:/Users/Alessandro/Desktop/portfolios/"
+    pdf_files = [f for f in os.listdir(pdf_dir) if f.startswith(codigo.zfill(3)) and f.endswith(".pdf")]
+    password = f"gamnic{codigo.zfill(3)}"
+    secciones_extraidas = []
 
-    seccion_extraida_modificada = poner_en_negrita_despues_de_es(seccion_extraida, "Rentabilidad del Portafolio")
-    seccion_extraida_html = formatear_a_html(seccion_extraida_modificada, font_family="Calibri", line_height="1")
+    for pdf_file in pdf_files:
+        pdf_path = os.path.join(pdf_dir, pdf_file)
+        seccion_extraida = extraer_seccion_pdf(pdf_path, "Rentabilidad del Portafolio", "Comentario de Mercado", password)
+        seccion_extraida_modificada = poner_en_negrita_despues_de_es(seccion_extraida, "Rentabilidad del Portafolio")
+        seccion_extraida_html = formatear_a_html(seccion_extraida_modificada, font_family="Calibri", line_height="1")
+        secciones_extraidas.append(seccion_extraida_html)
+
+    cuerpo_completo = "<br><br>".join(secciones_extraidas)
 
     enviar_correo(
         destinatario=datos["email"],
         nombre=datos["nombre"],
         asunto="Extracto del Estado de Cuenta",
-        cuerpo=f"Esperamos que te encuentres bien.<br><br> Te adjuntamos el estado de cuenta consolidado al cierre de {last_month_str}. La clave es la de siempre.<br><br>{seccion_extraida_html}<br>Quedamos a tu disposición para reunirnos y revisar los resultados, el detalle del portafolio, la estrategia a seguir y las ideas de inversión.<br>",
-        adjunto=pdf_path,
+        cuerpo=f"Esperamos que te encuentres bien.<br><br> Te adjuntamos el estado de cuenta consolidado al cierre de {last_month_str}. La clave es la de siempre.<br><br>{cuerpo_completo}<br>Quedamos a tu disposición para reunirnos y revisar los resultados, el detalle del portafolio, la estrategia a seguir y las ideas de inversión.<br>",
+        adjunto=[os.path.join(pdf_dir, pdf_file) for pdf_file in pdf_files],
         imagen_path=imagen_path
     )
 

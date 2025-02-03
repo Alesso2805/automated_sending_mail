@@ -37,8 +37,5 @@
 #     "93": {"nombre": "Guil", "email": "correo@empresa.com"},
 # }
 clientes = {
-    "4": {"nombre": "Matteo", "email": "correo@empresa.com"},
-    "5": {"nombre": "Carlos", "email": "correo@empresa.com"},
-    "6": {"nombre": "Óscar", "email": "correo@empresa.com"},
-    "77": {"nombre": "Frida", "email": "correo@empresa.com"},
+    "10": {"nombre": "Rafael", "email": "correo@empresa.com"},
 }
