@@ -22,7 +22,6 @@ def extraer_seccion_pdf(pdf_path, inicio, fin, password=None):
         # Buscar el final de la sección
         fin_idx = texto_completo.find(fin, inicio_idx)
         if fin_idx == -1:
-            # Si no se encuentra el final, extraer hasta el final del texto
             fin_idx = len(texto_completo)
 
         # Extraer la sección
@@ -56,10 +55,10 @@ def formatear_a_html(texto, font_family="Calibri", line_height="1"):
     resultado = []
     for i, linea in enumerate(lineas):
         if i == 0:
-            # Add a line break after the title
+            # Añadir una linea de espaciado antes del primer párrafo
             resultado.append(f'<p style="font-family: {font_family}; line-height: {line_height};"><b>{linea}</b></p>')
         else:
-            # Indent the rest of the text
+            # Indentar el resto del texto
             resultado.append(f'<p style="font-family: {font_family}; line-height: {line_height}; margin-left: 20px;">{linea}</p>')
     return ''.join(resultado)
 
@@ -110,9 +109,26 @@ last_month_str = last_month.strftime('%B').capitalize()
 
 # Enviar los correos
 for codigo, datos in clientes.items():
-    pdf_dir = "C:/Users/Alessandro/Desktop/portfolios/"
-    pdf_files = [f for f in os.listdir(pdf_dir) if f.startswith(codigo.zfill(3)) and f.endswith(".pdf")]
-    password = f"gamnic{codigo.zfill(3)}"
+    two_months_ago = today - datetime.timedelta(days=60)
+    two_months_ago_formatted = two_months_ago.strftime("%Y %m")
+
+    if codigo == "14FAM" or codigo == "14PER":
+        pdf_dir = rf"Y:/Clientes/014/014 - {two_months_ago_formatted}"
+        if codigo == "14FAM":
+            password = "gamnic014"
+            pdf_files = [f for f in os.listdir(pdf_dir) if f.startswith("014 FAM") and "Estado de Cuenta" in f]
+        elif codigo == "14PER":
+            password = "gamnic014"
+            pdf_files = [f for f in os.listdir(pdf_dir) if f.startswith("014 PER") and "Estado de Cuenta" in f]
+    else:
+        # Find the directory that contains the client code
+        parent_dir = rf"Y:/Clientes"
+        subdirs = [d for d in os.listdir(parent_dir) if os.path.isdir(os.path.join(parent_dir, d)) and codigo in d]
+        if subdirs:
+            pdf_dir = os.path.join(parent_dir, subdirs[0], f"{codigo.zfill(3)} - {two_months_ago_formatted}")
+            pdf_files = [f for f in os.listdir(pdf_dir) if f.startswith(codigo.zfill(3)) and "Estado de Cuenta" in f]
+            password = f"gamnic{codigo.zfill(3)}"
+
     secciones_extraidas = []
 
     for pdf_file in pdf_files:
