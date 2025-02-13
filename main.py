@@ -6,7 +6,7 @@ import datetime
 import locale
 import os
 
-imagen_path = "C:/Users/Alessandro/PycharmProjects/automated_sending_mail/gamnic.png"
+imagen_path = "C:/Users/Flip/PycharmProjects/automated_sending_mail/gamnic.png"
 
 def extraer_seccion_pdf(pdf_path, inicio, fin, password=None):
     with pdfplumber.open(pdf_path, password=password) as pdf:
@@ -36,7 +36,7 @@ def extraer_seccion_pdf(pdf_path, inicio, fin, password=None):
             relevant_part = filename.split('Cuenta')[-1].strip().replace('.pdf', '')
 
         if relevant_part:
-            seccion = seccion.replace(inicio, f"{inicio} - {relevant_part}", 1)
+            seccion = seccion.replace(inicio, f"{inicio} {relevant_part}", 1)
         else:
             seccion = seccion.replace(inicio, f"{inicio}", 1)
         return seccion
@@ -45,7 +45,7 @@ def poner_en_negrita_despues_de_es(texto, palabra_negrita):
     lineas = texto.split('\n')
     resultado = []
     for linea in lineas:
-        linea_modificada = re.sub(r'\bes\b(.*)', r'es<b>\1</b>', linea)
+        linea_modificada = re.sub(r'\b(es|fue)\b(.*)', r'\1<b>\2</b>', linea)
         linea_modificada = re.sub(re.escape(palabra_negrita), f'<b>{palabra_negrita}</b>', linea_modificada)
         resultado.append(linea_modificada)
     return '\n'.join(resultado)
@@ -62,11 +62,12 @@ def formatear_a_html(texto, font_family="Calibri", line_height="1"):
             resultado.append(f'<p style="font-family: {font_family}; line-height: {line_height}; margin-left: 20px;">{linea}</p>')
     return ''.join(resultado)
 
-def enviar_correo(destinatario, nombre, asunto, cuerpo, adjunto=None, imagen_path=None):
+def enviar_correo(destinatario, copia, nombre, asunto, cuerpo, adjunto=None, imagen_path=None):
     outlook = win32.Dispatch("outlook.application")
     mail = outlook.CreateItem(0)
 
     mail.To = destinatario
+    mail.CC = copia
     mail.Subject = asunto
     mail.BodyFormat = 1  # Establecer el formato del cuerpo como HTML
 
@@ -98,7 +99,7 @@ def enviar_correo(destinatario, nombre, asunto, cuerpo, adjunto=None, imagen_pat
             mail.Attachments.Add(file)
 
     mail.Send()
-    print(f"📧 Correo enviado a {nombre} ({destinatario}).")
+    print(f"📧 Correo enviado a {nombre} ({destinatario}) con copia a {copia}.")
 
 # Obtener el mes anterior
 locale.setlocale(locale.LC_TIME, "Spanish_Spain.1252")
@@ -109,11 +110,11 @@ last_month_str = last_month.strftime('%B').capitalize()
 
 # Enviar los correos
 for codigo, datos in clientes.items():
-    two_months_ago = today - datetime.timedelta(days=60)
-    two_months_ago_formatted = two_months_ago.strftime("%Y %m")
+    month_ago = today - datetime.timedelta(days=30)
+    month_ago_formatted = month_ago.strftime("%Y %m")
 
     if codigo == "14FAM" or codigo == "14PER":
-        pdf_dir = rf"Y:/Clientes/014/014 - {two_months_ago_formatted}"
+        pdf_dir = rf"Y:/Clientes/014/014 - {month_ago_formatted}"
         if codigo == "14FAM":
             password = "gamnic014"
             pdf_files = [f for f in os.listdir(pdf_dir) if f.startswith("014 FAM") and "Estado de Cuenta" in f]
@@ -125,7 +126,7 @@ for codigo, datos in clientes.items():
         parent_dir = rf"Y:/Clientes"
         subdirs = [d for d in os.listdir(parent_dir) if os.path.isdir(os.path.join(parent_dir, d)) and codigo in d]
         if subdirs:
-            pdf_dir = os.path.join(parent_dir, subdirs[0], f"{codigo.zfill(3)} - {two_months_ago_formatted}")
+            pdf_dir = os.path.join(parent_dir, subdirs[0], f"{codigo.zfill(3)} - {month_ago_formatted}")
             pdf_files = [f for f in os.listdir(pdf_dir) if f.startswith(codigo.zfill(3)) and "Estado de Cuenta" in f]
             password = f"gamnic{codigo.zfill(3)}"
 
@@ -142,7 +143,10 @@ for codigo, datos in clientes.items():
     cuerpo_completo = "<br><br>".join(secciones_extraidas)
 
     enviar_correo(
-        destinatario=datos["email"],
+        # destinatario="marioubillus@gamnic.com",
+        # copia="gonzalo.rodriguezmariategui@independiente.pe",
+        destinatario="correo@empresa.com",
+        copia="correo@empresa.com",
         nombre=datos["nombre"],
         asunto="Extracto del Estado de Cuenta",
         cuerpo=f"Esperamos que te encuentres bien.<br><br> Te adjuntamos el estado de cuenta consolidado al cierre de {last_month_str}. La clave es la de siempre.<br><br>{cuerpo_completo}<br>Quedamos a tu disposición para reunirnos y revisar los resultados, el detalle del portafolio, la estrategia a seguir y las ideas de inversión.<br>",

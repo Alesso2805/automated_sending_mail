@@ -2,11 +2,10 @@ import subprocess
 import tkinter as tk
 import os
 
-MAIN_SCRIPT_PATH = r"C:\Users\Alessandro\PycharmProjects\automated_sending_mail\main.py"
-LIBR_SCRIPT_PATH = r"C:\Users\Alessandro\PycharmProjects\automated_sending_mail\.venv\Scripts\activate.bat"
+MAIN_SCRIPT_PATH = r"C:\Users\Flip\PycharmProjects\automated_sending_mail\main.py"
 
 def ejecutar_script():
-    command = f'cmd /c "{LIBR_SCRIPT_PATH} && python {MAIN_SCRIPT_PATH}"'
+    command = f'python {MAIN_SCRIPT_PATH}'
     subprocess.run(command, shell=True)
 
 root = tk.Tk()
