@@ -1,6 +1,5 @@
 import subprocess
 import tkinter as tk
-import os
 
 MAIN_SCRIPT_PATH = r"C:\Users\Flip\PycharmProjects\automated_sending_mail\main.py"
 
@@ -15,3 +14,5 @@ boton = tk.Button(root, text="Enviar Correos", command=ejecutar_script, font=("A
 boton.pack(pady=20)
 
 root.mainloop()
+
+
